@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WiFi Admin</title><style>
+*{box-sizing:border-box}body{margin:0;background:#eef3f8;font-family:Arial,sans-serif;color:#152033}.wrap{max-width:700px;margin:25px auto;padding:14px}.card{background:#fff;border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 5px 22px #0001}input{width:100%;padding:13px;margin:6px 0;border:1px solid #ccd5e2;border-radius:10px;font-size:16px}button{padding:12px 17px;margin:7px 3px 3px 0;border:0;border-radius:10px;background:#1677ff;color:#fff;font-size:15px}.danger{background:#dc3545}.success{background:#198754}.row{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #eee}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#f5f7fa;padding:14px;border-radius:12px}@media(max-width:600px){.row{display:block}.grid{grid-template-columns:1fr}}
+</style></head><body><main class="wrap">
+<section class="card"><h1>⚙️ WiFi Admin Panel</h1><label>আপনার bKash নম্বর</label><input id="bkash" placeholder="01XXXXXXXXX"><button onclick="saveBkash()">সংরক্ষণ করুন</button></section>
+<section class="card"><h2>নতুন কাস্টমার</h2><input id="id" placeholder="Customer ID (C001)"><input id="name" placeholder="নাম"><input id="phone" placeholder="মোবাইল"><input id="bill" type="number" placeholder="মাসিক বিল"><button onclick="addCustomer()">কাস্টমার যোগ করুন</button></section>
+<section class="card"><h2>📊 হিসাব</h2><div id="stats"></div></section><section class="card"><h2>👥 কাস্টমার</h2><div id="customers"></div></section>
+</main><script>
+const KEY='wifi_customers_v2',SETTINGS='wifi_settings_v2';
+function get(){return JSON.parse(localStorage.getItem(KEY)||'[]')}function save(a){localStorage.setItem(KEY,JSON.stringify(a));render()}
+function saveBkash(){const v=document.getElementById('bkash').value.trim();if(!v)return alert('bKash নম্বর দিন');localStorage.setItem(SETTINGS,JSON.stringify({bkash:v}));alert('bKash নম্বর সংরক্ষণ হয়েছে')}
+function addCustomer(){const id=document.getElementById('id').value.trim().toUpperCase(),name=document.getElementById('name').value.trim(),phone=document.getElementById('phone').value.trim(),bill=Number(document.getElementById('bill').value);if(!id||!name||!bill)return alert('ID, নাম ও বিল দিন');const a=get();if(a.some(x=>x.id===id))return alert('এই ID আগে আছে');a.push({id,name,phone,bill,status:'Unpaid',month:new Date().toISOString().slice(0,7)});save(a);['id','name','phone','bill'].forEach(x=>document.getElementById(x).value='')}
+function approve(id){const a=get(),c=a.find(x=>x.id===id);c.status='Paid';c.paidAt=new Date().toLocaleString('bn-BD');save(a)}
+function reject(id){const a=get(),c=a.find(x=>x.id===id);c.status='Unpaid';c.trx='';save(a)}
+function removeC(id){if(confirm('এই কাস্টমার মুছবেন?'))save(get().filter(x=>x.id!==id))}
+function render(){const a=get(),paid=a.filter(x=>x.status==='Paid').reduce((s,x)=>s+x.bill,0),pending=a.filter(x=>x.status==='Pending').length,total=a.reduce((s,x)=>s+x.bill,0);document.getElementById('stats').innerHTML='<div class="grid"><div class="stat">কাস্টমার<br><b>'+a.length+'</b></div><div class="stat">মোট বিল<br><b>৳'+total+'</b></div><div class="stat">আদায়<br><b>৳'+paid+'</b></div><div class="stat">Pending<br><b>'+pending+'</b></div></div>';document.getElementById('customers').innerHTML=a.map(c=>'<div class="row"><div><b>'+c.id+'</b> — '+c.name+'<br>৳'+c.bill+' | '+c.status+(c.trx?'<br>Trx: '+c.trx:'')+'</div><div>'+(c.status==='Pending'?'<button class="success" onclick="approve(\''+c.id+'\')">Paid</button><button class="danger" onclick="reject(\''+c.id+'\')">Reject</button>':'')+'<button class="danger" onclick="removeC(\''+c.id+'\')">মুছুন</button></div></div>').join('')||'কোনো কাস্টমার নেই'}
+render();
+</script></body></html>
